@@ -171,23 +171,27 @@
     originalBox.addEventListener("input", generateDiff);
     modifiedBox.addEventListener("input", generateDiff);
 
-    copyButton.addEventListener("click", async () => {
-      const html = outputBox.innerHTML;
-      const text = outputBox.innerText;
+    copyButton.addEventListener("click", () => {
+      const range = document.createRange();
+      range.selectNodeContents(outputBox);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
 
       try {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/plain": new Blob([text], { type: "text/plain" }),
-            "text/html": new Blob([html], { type: "text/html" })
-          })
-        ]);
-        copyButton.innerText = "Copied!";
-        setTimeout(() => copyButton.innerText = "Copy", 1000);
+        const successful = document.execCommand("copy");
+        if (successful) {
+          copyButton.innerText = "Copied!";
+          setTimeout(() => copyButton.innerText = "Copy", 1000);
+        } else {
+          alert("Copy failed. Try selecting manually.");
+        }
       } catch (err) {
-        console.error("Failed to copy:", err);
-        alert("Copy failed. Try using Chrome or Edge.");
+        console.error("Copy command failed:", err);
+        alert("Copy not supported. Try selecting manually.");
       }
+
+      selection.removeAllRanges();
     });
   </script>
 </body>
