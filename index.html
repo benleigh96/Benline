@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Benline</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/diff-match-patch@1.0.5/index.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -63,8 +64,6 @@
       outline: none;
       font-family: 'Inter', monospace;
       overflow-wrap: break-word;
-      word-wrap: break-word;
-      word-break: break-word;
       white-space: pre-wrap;
       background-color: #fff;
       border-right: 1px solid #ddd;
@@ -134,35 +133,31 @@
     }
 
     function generateDiff() {
+      if (typeof diff_match_patch === "undefined") {
+        outputBox.innerHTML = '<div style="color: red;">Diff engine failed to load.</div>';
+        return;
+      }
+
+      const dmp = new diff_match_patch();
+      dmp.Diff_EditCost = 4;
+
       const original = originalBox.value;
       const modified = modifiedBox.value;
 
-      let i = 0, j = 0;
-      let result = "";
+      if (original === modified) {
+        outputBox.innerHTML = '<div style="text-align:center; color:#888; font-style:italic;">These texts are identical</div>';
+        return;
+      }
 
-      while (i < original.length || j < modified.length) {
-        if (original[i] === modified[j]) {
-          result += `<span class="black">${escapeHTML(original[i] || "")}</span>`;
-          i++;
-          j++;
-        } else {
-          if (original[i] !== modified[j] && original[i + 1] === modified[j]) {
-            result += `<span class="red">${escapeHTML(original[i])}</span>`;
-            i++;
-          } else if (original[i] !== modified[j] && original[i] === modified[j + 1]) {
-            result += `<span class="blue">${escapeHTML(modified[j])}</span>`;
-            j++;
-          } else {
-            if (original[i]) {
-              result += `<span class="red">${escapeHTML(original[i])}</span>`;
-              i++;
-            }
-            if (modified[j]) {
-              result += `<span class="blue">${escapeHTML(modified[j])}</span>`;
-              j++;
-            }
-          }
-        }
+      const diffs = dmp.diff_main(original, modified);
+      dmp.diff_cleanupEfficiency(diffs);
+
+      let result = '';
+      for (const [op, data] of diffs) {
+        const safe = escapeHTML(data);
+        if (op === 0) result += `<span class="black">${safe}</span>`;
+        else if (op === -1) result += `<span class="red">${safe}</span>`;
+        else if (op === 1) result += `<span class="blue">${safe}</span>`;
       }
 
       outputBox.innerHTML = result;
