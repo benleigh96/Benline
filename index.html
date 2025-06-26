@@ -49,7 +49,7 @@
 
     .container {
       display: flex;
-      height: calc(100vh - 160px);
+      height: calc(100vh - 120px);
       padding: 0 1rem 1rem 1rem;
       box-sizing: border-box;
     }
@@ -57,7 +57,7 @@
     textarea, .output {
       flex: 1;
       padding: 1rem;
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1.5;
       border: none;
       resize: none;
@@ -100,59 +100,13 @@
       background-color: #ddd;
     }
 
-    footer {
-      text-align: center;
-      padding: 0.75rem;
-      font-size: 0.85rem;
-      color: #666;
-      background-color: #fff;
-      border-top: 1px solid #eee;
+    .flash {
+      animation: flash-bg 0.5s ease;
     }
 
-    .privacy-link {
-      cursor: pointer;
-      text-decoration: underline;
-      color: inherit;
-      font-family: 'Inter', sans-serif;
-    }
-
-    #privacy-popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-width: 420px;
-      width: 90%;
-      padding: 1rem 1.25rem;
-      background-color: #fff;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      z-index: 1000;
-      display: none;
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-
-    #privacy-popup p {
-      margin: 0 0 1rem 0;
-    }
-
-    #privacy-popup .close {
-      position: absolute;
-      top: 6px;
-      right: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      color: #888;
-    }
-
-    #privacy-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.3);
-      z-index: 999;
-      display: none;
+    @keyframes flash-bg {
+      0%   { background-color: #fff8c4; }
+      100% { background-color: #fff; }
     }
   </style>
 </head>
@@ -176,16 +130,6 @@
     <div class="output-wrapper">
       <div class="output" id="output"></div>
     </div>
-  </div>
-
-  <footer>
-    <span class="privacy-link" onclick="showPrivacy()">Privacy</span>
-  </footer>
-
-  <div id="privacy-overlay"></div>
-  <div id="privacy-popup">
-    <span class="close" onclick="hidePrivacy()">×</span>
-    <p><em>This page is static and runs entirely in your browser. Text typed into the Original or Modified boxes is not sent anywhere. The “Copy” button simply copies the content to your own clipboard. Nothing is logged, stored, tracked, or uploaded. Benline away...</em></p>
   </div>
 
   <script>
@@ -226,16 +170,25 @@
       let result = '';
       for (const [op, data] of diffs) {
         const safe = escapeHTML(data);
-        if (op === 0) result += `<span class="black">${safe}</span>`;
-        else if (op === -1) result += `<span class="red">${safe}</span>`;
-        else if (op === 1) result += `<span class="blue">${safe}</span>`;
+        const style = 'font-family: Inter, Calibri, sans-serif; font-size: 12px;';
+        if (op === 0) result += `<span class="black" style="${style}">${safe}</span>`;
+        else if (op === -1) result += `<span class="red" style="${style}">${safe}</span>`;
+        else if (op === 1) result += `<span class="blue" style="${style}">${safe}</span>`;
       }
 
       outputBox.innerHTML = result;
     }
 
+    function flashPaste(el) {
+      el.classList.add("flash");
+      setTimeout(() => el.classList.remove("flash"), 500);
+    }
+
     originalBox.addEventListener("input", generateDiff);
     modifiedBox.addEventListener("input", generateDiff);
+
+    originalBox.addEventListener("paste", () => flashPaste(originalBox));
+    modifiedBox.addEventListener("paste", () => flashPaste(modifiedBox));
 
     copyButton.addEventListener("click", () => {
       const range = document.createRange();
@@ -259,16 +212,6 @@
 
       selection.removeAllRanges();
     });
-
-    function showPrivacy() {
-      document.getElementById("privacy-popup").style.display = "block";
-      document.getElementById("privacy-overlay").style.display = "block";
-    }
-
-    function hidePrivacy() {
-      document.getElementById("privacy-popup").style.display = "none";
-      document.getElementById("privacy-overlay").style.display = "none";
-    }
   </script>
 </body>
 </html>
