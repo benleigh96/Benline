@@ -1,0 +1,16 @@
+LICENSES/LICENSE-diff-match-patch.txt
+
+This project includes diff-match-patch, licensed under the Apache License 2.0.
+See https://github.com/google/diff-match-patch
+
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION...
+
+[Full license text truncated for brevity — can be downloaded from official source]
+
+Add Apache 2.0 license for diff-match-patch
+
