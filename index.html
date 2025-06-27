@@ -44,6 +44,7 @@
       padding:0.5rem 1rem;
       gap:0.5rem;
       flex-wrap:wrap;
+      position:relative;
     }
     .label-container {
       display:flex;
@@ -133,12 +134,26 @@
       color:#aaa;
       cursor:default;
     }
-    .flash {
-      animation: flash-bg 0.6s ease;
+    #copy-dropdown {
+      display:none;
+      position:absolute;
+      flex-direction:column;
+      z-index:10;
+      right:0;
+      margin-top:8px;
     }
-    @keyframes flash-bg {
-      0% { background-color:#fff8c4; }
-      100% { background-color:#fff; }
+    #copy-dropdown button {
+      font-size:0.75rem;
+      padding:2px 6px;
+      border:1px solid #ccc;
+      border-radius:4px;
+      cursor:pointer;
+      background:#eee;
+      margin-top:2px;
+      white-space:nowrap;
+    }
+    #copy-dropdown button:hover {
+      background:#ddd;
     }
     .highlighted-diff {
       outline:2px solid orange;
@@ -168,7 +183,13 @@
       <button id="font-up">+</button>
       <button id="flip-button">Flip Text</button>
       <button id="clear-button">Clear All</button>
-      <button id="copy-button">Copy Benline</button>
+      <div style="position:relative;">
+        <button id="copy-button">Copy</button>
+        <div id="copy-dropdown">
+          <button id="copy-modified-benline">Modified and Benline</button>
+          <button id="copy-benline-only">Benline</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -186,168 +207,249 @@
   </div>
 
 <script>
-const originalBox=document.getElementById("original");
-const modifiedBox=document.getElementById("modified");
-const outputBox=document.getElementById("output");
-const summaryBox=document.getElementById("summary");
-const styleButton=document.getElementById("style-button");
-const emphasisButton=document.getElementById("emphasis-button");
-const fontUpButton=document.getElementById("font-up");
-const fontDownButton=document.getElementById("font-down");
-const fontSizeDisplay=document.getElementById("font-size-display");
-const flipButton=document.getElementById("flip-button");
-const clearButton=document.getElementById("clear-button");
-const copyButton=document.getElementById("copy-button");
-const prevButton=document.getElementById("prev-button");
-const nextButton=document.getElementById("next-button");
-const logoRed=document.getElementById("logo-red");
-const logoBen=document.getElementById("logo-ben");
+const originalBox = document.getElementById("original");
+const modifiedBox = document.getElementById("modified");
+const outputBox = document.getElementById("output");
+const summaryBox = document.getElementById("summary");
+const styleButton = document.getElementById("style-button");
+const emphasisButton = document.getElementById("emphasis-button");
+const fontUpButton = document.getElementById("font-up");
+const fontDownButton = document.getElementById("font-down");
+const fontSizeDisplay = document.getElementById("font-size-display");
+const flipButton = document.getElementById("flip-button");
+const clearButton = document.getElementById("clear-button");
+const copyButton = document.getElementById("copy-button");
+const copyDropdown = document.getElementById("copy-dropdown");
+const copyModifiedBenline = document.getElementById("copy-modified-benline");
+const copyBenlineOnly = document.getElementById("copy-benline-only");
+const prevButton = document.getElementById("prev-button");
+const nextButton = document.getElementById("next-button");
+const logoRed = document.getElementById("logo-red");
+const logoBen = document.getElementById("logo-ben");
 
-let styleMode="Standard";
-let emphasisMode="No Highlight";
-let baseFontSize=14;
-const minFontSize=10;
-const maxFontSize=20;
+let styleMode = "Standard";
+let emphasisMode = "No Highlight";
+let baseFontSize = 14;
+const minFontSize = 10;
+const maxFontSize = 20;
 
-let diffElements=[];
-let currentIndex=-1;
-let logoFlipped=false;
+let diffElements = [];
+let currentIndex = -1;
+let logoFlipped = false;
 
-function escapeHTML(str){
+function escapeHTML(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
-function updateTextAreasFont(){
-  originalBox.style.fontSize=`${baseFontSize}px`;
-  modifiedBox.style.fontSize=`${baseFontSize}px`;
+function updateTextAreasFont() {
+  originalBox.style.fontSize = `${baseFontSize}px`;
+  modifiedBox.style.fontSize = `${baseFontSize}px`;
+  outputBox.style.fontSize = `${baseFontSize}px`;
+  fontSizeDisplay.textContent = baseFontSize;
 }
-function generateDiff(){
-  diffElements=[];
-  currentIndex=-1;
+function generateDiff() {
+  diffElements = [];
+  currentIndex = -1;
   prevButton.classList.add("disabled-button");
   nextButton.classList.add("disabled-button");
-  summaryBox.style.display="none";
+  summaryBox.style.display = "none";
 
-  const dmp=new diff_match_patch();
-  dmp.Diff_EditCost=4;
+  const dmp = new diff_match_patch();
+  dmp.Diff_EditCost = 4;
 
-  const original=originalBox.value;
-  const modified=modifiedBox.value;
+  const original = originalBox.value;
+  const modified = modifiedBox.value;
 
-  if(original===modified){
-    outputBox.innerHTML='<div style="text-align:center;color:#888;font-style:italic;">These texts are identical</div><div style="text-align:center;font-size:20px;">👌</div>';
+  if (original === modified) {
+    outputBox.innerHTML = '<div style="text-align:center;color:#888;font-style:italic;">These texts are identical</div><div style="text-align:center;font-size:20px;">👌</div>';
+    updateTextAreasFont();
     return;
   }
 
-  const diffs=dmp.diff_main(original,modified);
+  const diffs = dmp.diff_main(original, modified);
   dmp.diff_cleanupEfficiency(diffs);
 
-  let result='';
-  let idCounter=0;
-  let insertions=0;
-  let deletions=0;
+  let result = '';
+  let idCounter = 0;
+  let insertions = 0;
+  let deletions = 0;
 
-  for(const [op,data] of diffs){
-    const safe=escapeHTML(data);
-    let baseStyle=`font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
-    let emphasis='';
-    if(emphasisMode==="Highlight" && op!==0){
-      emphasis="background-color:#ffff99;";
+  for (const [op, data] of diffs) {
+    const safe = escapeHTML(data);
+    let baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
+    let emphasis = '';
+    if (emphasisMode === "Highlight" && op !== 0) {
+      emphasis = "background-color:#ffff99;";
     }
 
-    if(op===0){
-      result+=`<span class="black" style="${baseStyle}">${safe}</span>`;
-    } else if(op===-1){
-      const color=styleMode==="Standard"?"red":"#BA55D3";
-      const id=`diff-${idCounter++}`;
-      result+=`<span id="${id}" style="${baseStyle}color:${color};text-decoration:line-through;${emphasis}">${safe}</span>`;
+    if (op === 0) {
+      result += `<span class="black" style="${baseStyle}">${safe}</span>`;
+    } else if (op === -1) {
+      const color = styleMode === "Standard" ? "red" : "#BA55D3";
+      const id = `diff-${idCounter++}`;
+      result += `<span id="${id}" style="${baseStyle}color:${color};text-decoration:line-through;${emphasis}">${safe}</span>`;
       diffElements.push(id);
       deletions++;
-    } else if(op===1){
-      const color=styleMode==="Standard"?"blue":"#00CED1";
-      const id=`diff-${idCounter++}`;
-      result+=`<span id="${id}" style="${baseStyle}color:${color};text-decoration:underline;${emphasis}">${safe}</span>`;
+    } else if (op === 1) {
+      const color = styleMode === "Standard" ? "blue" : "#00CED1";
+      const id = `diff-${idCounter++}`;
+      result += `<span id="${id}" style="${baseStyle}color:${color};text-decoration:underline;${emphasis}">${safe}</span>`;
       diffElements.push(id);
       insertions++;
     }
   }
 
-  outputBox.innerHTML=result;
+  outputBox.innerHTML = result;
   updateTextAreasFont();
-  fontSizeDisplay.textContent=baseFontSize;
 
-  if(diffElements.length){
+  if (diffElements.length) {
     prevButton.classList.remove("disabled-button");
     nextButton.classList.remove("disabled-button");
   }
 
-  summaryBox.style.display="block";
-  summaryBox.textContent=`Summary: ${insertions} insertion${insertions!==1?"s":""}, ${deletions} deletion${deletions!==1?"s":""}.`;
+  summaryBox.style.display = "block";
+  summaryBox.textContent = `Summary: ${insertions} insertion${insertions !== 1 ? "s" : ""}, ${deletions} deletion${deletions !== 1 ? "s" : ""}.`;
 }
-originalBox.addEventListener("input",generateDiff);
-modifiedBox.addEventListener("input",generateDiff);
-flipButton.addEventListener("click",()=>{
-  const temp=originalBox.value;
-  originalBox.value=modifiedBox.value;
-  modifiedBox.value=temp;
+
+originalBox.addEventListener("input", generateDiff);
+modifiedBox.addEventListener("input", generateDiff);
+
+flipButton.addEventListener("click", () => {
+  const temp = originalBox.value;
+  originalBox.value = modifiedBox.value;
+  modifiedBox.value = temp;
   generateDiff();
-  logoFlipped=!logoFlipped;
-  logoRed.className=logoFlipped?"blue":"red";
-  logoBen.className=logoFlipped?"red":"blue";
+  logoFlipped = !logoFlipped;
+  logoRed.className = logoFlipped ? "blue" : "red";
+  logoBen.className = logoFlipped ? "red" : "blue";
 });
-clearButton.addEventListener("click",()=>{
-  originalBox.value="";
-  modifiedBox.value="";
-  outputBox.innerHTML="";
-  summaryBox.style.display="none";
-  diffElements=[];
-  currentIndex=-1;
+
+clearButton.addEventListener("click", () => {
+  originalBox.value = "";
+  modifiedBox.value = "";
+  outputBox.innerHTML = "";
+  summaryBox.style.display = "none";
+  diffElements = [];
+  currentIndex = -1;
   prevButton.classList.add("disabled-button");
   nextButton.classList.add("disabled-button");
 });
-styleButton.addEventListener("click",()=>{
-  styleMode=styleMode==="Standard"?"Softer":"Standard";
-  styleButton.textContent=styleMode==="Standard"?"Standard Colours":"Softer Colours";
+
+styleButton.addEventListener("click", () => {
+  styleMode = styleMode === "Standard" ? "Softer" : "Standard";
+  styleButton.textContent = styleMode === "Standard" ? "Standard Colours" : "Softer Colours";
   generateDiff();
 });
-emphasisButton.addEventListener("click",()=>{
-  emphasisMode=emphasisMode==="No Highlight"?"Highlight":"No Highlight";
-  emphasisButton.textContent=emphasisMode;
+
+emphasisButton.addEventListener("click", () => {
+  emphasisMode = emphasisMode === "No Highlight" ? "Highlight" : "No Highlight";
+  emphasisButton.textContent = emphasisMode;
   generateDiff();
 });
-fontDownButton.addEventListener("click",()=>{if(baseFontSize>minFontSize){baseFontSize--;generateDiff();}});
-fontUpButton.addEventListener("click",()=>{if(baseFontSize<maxFontSize){baseFontSize++;generateDiff();}});
-copyButton.addEventListener("click",()=>{
-  const range=document.createRange();
-  range.selectNodeContents(outputBox);
-  const selection=window.getSelection();
+
+fontDownButton.addEventListener("click", () => {
+  if (baseFontSize > minFontSize) {baseFontSize--;}
+  updateTextAreasFont();
+  generateDiff();
+});
+
+fontUpButton.addEventListener("click", () => {
+  if (baseFontSize < maxFontSize) {baseFontSize++;}
+  updateTextAreasFont();
+  generateDiff();
+});
+
+copyButton.addEventListener("click", () => {
+  copyDropdown.style.display = copyDropdown.style.display === "flex" ? "none" : "flex";
+});
+
+// Hide dropdown if clicking elsewhere
+document.addEventListener("click", (event) => {
+  if (!copyButton.contains(event.target) && !copyDropdown.contains(event.target)) {
+    copyDropdown.style.display = "none";
+  }
+});
+
+copyModifiedBenline.addEventListener("click", () => {
+  const tempDiv = document.createElement("div");
+  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
+
+  // Modified text
+  const modifiedDiv = document.createElement("div");
+  modifiedDiv.textContent = modifiedBox.value;
+  modifiedDiv.setAttribute("style", baseStyle);
+
+  // Separator
+  const separatorDiv = document.createElement("div");
+  separatorDiv.textContent = "***";
+  separatorDiv.setAttribute("style", baseStyle);
+
+  // Benline HTML
+  const benlineDiv = document.createElement("div");
+  benlineDiv.innerHTML = outputBox.innerHTML;
+  benlineDiv.querySelectorAll("span").forEach(span => {
+    span.style.fontSize = `${baseFontSize}px`;
+  });
+
+  tempDiv.appendChild(modifiedDiv);
+  tempDiv.appendChild(separatorDiv);
+  tempDiv.appendChild(benlineDiv);
+
+  document.body.appendChild(tempDiv);
+
+  const range = document.createRange();
+  range.selectNodeContents(tempDiv);
+  const selection = window.getSelection();
   selection.removeAllRanges();
   selection.addRange(range);
-  try{
+  try {
     document.execCommand("copy");
-    copyButton.textContent="Copied!";
-    setTimeout(()=>copyButton.textContent="Copy Benline",1000);
-  }catch(err){alert("Copy not supported.");}
+    copyButton.textContent = "Copied!";
+    setTimeout(() => copyButton.textContent = "Copy Benline", 1000);
+  } catch(err) {
+    alert("Copy not supported.");
+  }
   selection.removeAllRanges();
+  document.body.removeChild(tempDiv);
+  copyDropdown.style.display = "none";
 });
-nextButton.addEventListener("click",()=>{
-  if(!diffElements.length)return;
-  if(currentIndex>=0){
+
+copyBenlineOnly.addEventListener("click", () => {
+  const range = document.createRange();
+  range.selectNodeContents(outputBox);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  try {
+    document.execCommand("copy");
+    copyButton.textContent = "Copied!";
+    setTimeout(() => copyButton.textContent = "Copy Benline", 1000);
+  } catch(err) {
+    alert("Copy not supported.");
+  }
+  selection.removeAllRanges();
+  copyDropdown.style.display = "none";
+});
+
+nextButton.addEventListener("click", () => {
+  if (!diffElements.length) return;
+  if (currentIndex >= 0) {
     document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
   }
-  currentIndex=(currentIndex+1)%diffElements.length;
-  const el=document.getElementById(diffElements[currentIndex]);
+  currentIndex = (currentIndex + 1) % diffElements.length;
+  const el = document.getElementById(diffElements[currentIndex]);
   el.classList.add("highlighted-diff");
-  el.scrollIntoView({behavior:"smooth",block:"center"});
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
 });
-prevButton.addEventListener("click",()=>{
-  if(!diffElements.length)return;
-  if(currentIndex>=0){
+
+prevButton.addEventListener("click", () => {
+  if (!diffElements.length) return;
+  if (currentIndex >= 0) {
     document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
   }
-  currentIndex=(currentIndex-1+diffElements.length)%diffElements.length;
-  const el=document.getElementById(diffElements[currentIndex]);
+  currentIndex = (currentIndex - 1 + diffElements.length) % diffElements.length;
+  const el = document.getElementById(diffElements[currentIndex]);
   el.classList.add("highlighted-diff");
-  el.scrollIntoView({behavior:"smooth",block:"center"});
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 </script>
 </body>
