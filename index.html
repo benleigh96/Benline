@@ -7,211 +7,348 @@
   <script src="https://cdn.jsdelivr.net/npm/diff-match-patch@1.0.5/index.min.js"></script>
   <style>
     body {
-      margin: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f9f9f9;
+      margin:0;
+      font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background:#f9f9f9;
     }
-
     header {
-      background-color: #fff;
-      padding: 1rem;
-      text-align: center;
-      font-size: 2rem;
+      background:#fff;
+      padding:1rem;
+      text-align:center;
+      font-size:2rem;
+      position:relative;
     }
-
-    .red {
-      color: red;
-      text-decoration: line-through;
+    .badge {
+      font-size:0.75rem;
+      border:1px solid #f4c27b;
+      border-radius:999px;
+      padding:0.2rem 0.6rem;
+      background:#fff8d1;
+      color:#b58900;
+      white-space:nowrap;
+      position:absolute;
+      right:1rem;
+      top:50%;
+      transform:translateY(-50%);
     }
-
-    .blue {
-      color: blue;
-      text-decoration: underline;
+    .red {color:red;text-decoration:line-through;}
+    .blue {color:blue;text-decoration:underline;}
+    .black {color:black;}
+    .toolbar, .review-toolbar {
+      background:#fff;
     }
-
-    .black {
-      color: black;
+    .toolbar-inner, .review-toolbar-inner {
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      padding:0.5rem 1rem;
+      gap:0.5rem;
+      flex-wrap:wrap;
     }
-
     .label-container {
-      display: flex;
-      font-size: 0.85rem;
-      color: #666;
-      background-color: #fff;
-      padding: 0.5rem 1rem 0 1rem;
+      display:flex;
+      font-size:0.85rem;
+      color:#666;
+      background:#fff;
+      padding:0.5rem 1rem 0 1rem;
     }
-
     .label-container div {
-      flex: 1;
-      text-align: center;
-      position: relative;
+      flex:1;
+      text-align:center;
+      position:relative;
     }
-
     .container {
-      display: flex;
-      height: calc(100vh - 120px);
-      padding: 0 1rem 1rem 1rem;
-      box-sizing: border-box;
+      display:flex;
+      align-items:stretch;
+      height:calc(100vh - 230px);
+      padding:0 1rem 1rem 1rem;
+      box-sizing:border-box;
     }
-
+    .column {
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      border-right:1px solid #ddd;
+      margin-bottom:10px;
+    }
+    .column:last-child {
+      border-right:none;
+    }
     textarea, .output {
-      flex: 1;
-      padding: 1rem;
-      font-size: 12px;
-      line-height: 1.5;
-      border: none;
-      resize: none;
-      outline: none;
-      font-family: 'Inter', monospace;
-      overflow-wrap: break-word;
-      white-space: pre-wrap;
-      background-color: #fff;
-      border-right: 1px solid #ddd;
-      box-sizing: border-box;
-      overflow-y: auto;
+      flex:1;
+      height:100%;
+      padding:1rem;
+      line-height:1.5;
+      font-size:14px;
+      border:none;
+      resize:none;
+      outline:none;
+      font-family:'Inter', monospace;
+      white-space:pre-wrap;
+      background:#fff;
+      box-sizing:border-box;
+      overflow-y:auto;
+      vertical-align:top;
+      margin:0;
+      min-height:300px;
     }
-
     .output {
-      border-right: none;
-      overflow-x: hidden;
+      overflow-x:hidden;
+      word-wrap:break-word;
+      overflow-wrap:anywhere;
     }
-
     .output-wrapper {
-      flex: 1;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
     }
-
-    #copy-button {
-      position: absolute;
-      top: -1.5rem;
-      right: 0.5rem;
-      font-size: 0.75rem;
-      padding: 2px 6px;
-      background-color: #eee;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      cursor: pointer;
+    .summary {
+      padding:0.5rem 1rem;
+      font-size:0.85rem;
+      color:#333;
+      border-top:1px solid #ddd;
+      background:#fefefe;
     }
-
-    #copy-button:hover {
-      background-color: #ddd;
+    #style-button,#emphasis-button,#flip-button,#clear-button,#copy-button,
+    #font-down,#font-up,#font-size-display,#prev-button,#next-button {
+      font-size:0.75rem;
+      padding:2px 6px;
+      border:1px solid #ccc;
+      border-radius:4px;
+      cursor:pointer;
+      background:#eee;
     }
-
+    #font-size-display {
+      background:#fff;
+      cursor:default;
+    }
+    #style-button:hover,#emphasis-button:hover,#flip-button:hover,
+    #clear-button:hover,#copy-button:hover,#font-down:hover,#font-up:hover,
+    #prev-button:hover,#next-button:hover {
+      background:#ddd;
+    }
+    .disabled-button {
+      background:#fff;
+      color:#aaa;
+      cursor:default;
+    }
     .flash {
-      animation: flash-bg 0.5s ease;
+      animation: flash-bg 0.6s ease;
     }
-
     @keyframes flash-bg {
-      0%   { background-color: #fff8c4; }
-      100% { background-color: #fff; }
+      0% { background-color:#fff8c4; }
+      100% { background-color:#fff; }
+    }
+    .highlighted-diff {
+      outline:2px solid orange;
+      outline-offset:2px;
     }
   </style>
 </head>
 <body>
   <header>
-    <span class="red">Red</span><span class="blue">Ben</span><span class="black">line</span>
+    <span id="logo-red" class="red">Red</span><span id="logo-ben" class="blue">Ben</span><span class="black">line</span>
+    <div class="badge">in Beta Mode 🥸</div>
   </header>
 
-  <div class="label-container">
-    <div>Original</div>
-    <div>Modified</div>
-    <div>
-      Benline
-      <button id="copy-button">Copy</button>
+  <div class="review-toolbar">
+    <div class="review-toolbar-inner">
+      <button id="prev-button" class="disabled-button">Previous</button>
+      <button id="next-button" class="disabled-button">Next</button>
     </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <button id="style-button">Standard Colours</button>
+      <button id="emphasis-button">No Highlight</button>
+      <button id="font-down">−</button>
+      <div id="font-size-display">14</div>
+      <button id="font-up">+</button>
+      <button id="flip-button">Flip Text</button>
+      <button id="clear-button">Clear All</button>
+      <button id="copy-button">Copy Benline</button>
+    </div>
+  </div>
+
+  <div class="label-container">
+    <div>Original</div><div>Modified</div><div>Benline</div>
   </div>
 
   <div class="container">
-    <textarea id="original" placeholder="Original text..."></textarea>
-    <textarea id="modified" placeholder="Modified text..."></textarea>
-    <div class="output-wrapper">
+    <div class="column"><textarea id="original" placeholder="Original text..."></textarea></div>
+    <div class="column"><textarea id="modified" placeholder="Modified text..."></textarea></div>
+    <div class="column output-wrapper">
       <div class="output" id="output"></div>
+      <div id="summary" class="summary" style="display:none;"></div>
     </div>
   </div>
 
-  <script>
-    const originalBox = document.getElementById("original");
-    const modifiedBox = document.getElementById("modified");
-    const outputBox = document.getElementById("output");
-    const copyButton = document.getElementById("copy-button");
+<script>
+const originalBox=document.getElementById("original");
+const modifiedBox=document.getElementById("modified");
+const outputBox=document.getElementById("output");
+const summaryBox=document.getElementById("summary");
+const styleButton=document.getElementById("style-button");
+const emphasisButton=document.getElementById("emphasis-button");
+const fontUpButton=document.getElementById("font-up");
+const fontDownButton=document.getElementById("font-down");
+const fontSizeDisplay=document.getElementById("font-size-display");
+const flipButton=document.getElementById("flip-button");
+const clearButton=document.getElementById("clear-button");
+const copyButton=document.getElementById("copy-button");
+const prevButton=document.getElementById("prev-button");
+const nextButton=document.getElementById("next-button");
+const logoRed=document.getElementById("logo-red");
+const logoBen=document.getElementById("logo-ben");
 
-    function escapeHTML(str) {
-      return str.replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;");
+let styleMode="Standard";
+let emphasisMode="No Highlight";
+let baseFontSize=14;
+const minFontSize=10;
+const maxFontSize=20;
+
+let diffElements=[];
+let currentIndex=-1;
+let logoFlipped=false;
+
+function escapeHTML(str){
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function updateTextAreasFont(){
+  originalBox.style.fontSize=`${baseFontSize}px`;
+  modifiedBox.style.fontSize=`${baseFontSize}px`;
+}
+function generateDiff(){
+  diffElements=[];
+  currentIndex=-1;
+  prevButton.classList.add("disabled-button");
+  nextButton.classList.add("disabled-button");
+  summaryBox.style.display="none";
+
+  const dmp=new diff_match_patch();
+  dmp.Diff_EditCost=4;
+
+  const original=originalBox.value;
+  const modified=modifiedBox.value;
+
+  if(original===modified){
+    outputBox.innerHTML='<div style="text-align:center;color:#888;font-style:italic;">These texts are identical</div><div style="text-align:center;font-size:20px;">👌</div>';
+    return;
+  }
+
+  const diffs=dmp.diff_main(original,modified);
+  dmp.diff_cleanupEfficiency(diffs);
+
+  let result='';
+  let idCounter=0;
+  let insertions=0;
+  let deletions=0;
+
+  for(const [op,data] of diffs){
+    const safe=escapeHTML(data);
+    let baseStyle=`font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
+    let emphasis='';
+    if(emphasisMode==="Highlight" && op!==0){
+      emphasis="background-color:#ffff99;";
     }
 
-    function generateDiff() {
-      if (typeof diff_match_patch === "undefined") {
-        outputBox.innerHTML = '<div style="color: red;">Diff engine failed to load.</div>';
-        return;
-      }
-
-      const dmp = new diff_match_patch();
-      dmp.Diff_EditCost = 4;
-
-      const original = originalBox.value;
-      const modified = modifiedBox.value;
-
-      if (original === modified) {
-        outputBox.innerHTML = `
-          <div style="text-align:center; color:#888; font-style:italic;">These texts are identical</div>
-          <div style="text-align:center; font-size:20px;">👌</div>
-        `;
-        return;
-      }
-
-      const diffs = dmp.diff_main(original, modified);
-      dmp.diff_cleanupEfficiency(diffs);
-
-      let result = '';
-      for (const [op, data] of diffs) {
-        const safe = escapeHTML(data);
-        const style = 'font-family: Inter, Calibri, sans-serif; font-size: 12px;';
-        if (op === 0) result += `<span class="black" style="${style}">${safe}</span>`;
-        else if (op === -1) result += `<span class="red" style="${style}">${safe}</span>`;
-        else if (op === 1) result += `<span class="blue" style="${style}">${safe}</span>`;
-      }
-
-      outputBox.innerHTML = result;
+    if(op===0){
+      result+=`<span class="black" style="${baseStyle}">${safe}</span>`;
+    } else if(op===-1){
+      const color=styleMode==="Standard"?"red":"#BA55D3";
+      const id=`diff-${idCounter++}`;
+      result+=`<span id="${id}" style="${baseStyle}color:${color};text-decoration:line-through;${emphasis}">${safe}</span>`;
+      diffElements.push(id);
+      deletions++;
+    } else if(op===1){
+      const color=styleMode==="Standard"?"blue":"#00CED1";
+      const id=`diff-${idCounter++}`;
+      result+=`<span id="${id}" style="${baseStyle}color:${color};text-decoration:underline;${emphasis}">${safe}</span>`;
+      diffElements.push(id);
+      insertions++;
     }
+  }
 
-    function flashPaste(el) {
-      el.classList.add("flash");
-      setTimeout(() => el.classList.remove("flash"), 500);
-    }
+  outputBox.innerHTML=result;
+  updateTextAreasFont();
+  fontSizeDisplay.textContent=baseFontSize;
 
-    originalBox.addEventListener("input", generateDiff);
-    modifiedBox.addEventListener("input", generateDiff);
+  if(diffElements.length){
+    prevButton.classList.remove("disabled-button");
+    nextButton.classList.remove("disabled-button");
+  }
 
-    originalBox.addEventListener("paste", () => flashPaste(originalBox));
-    modifiedBox.addEventListener("paste", () => flashPaste(modifiedBox));
-
-    copyButton.addEventListener("click", () => {
-      const range = document.createRange();
-      range.selectNodeContents(outputBox);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-
-      try {
-        const successful = document.execCommand("copy");
-        if (successful) {
-          copyButton.innerText = "Copied!";
-          setTimeout(() => copyButton.innerText = "Copy", 1000);
-        } else {
-          alert("Copy failed. Try selecting manually.");
-        }
-      } catch (err) {
-        console.error("Copy command failed:", err);
-        alert("Copy not supported. Try selecting manually.");
-      }
-
-      selection.removeAllRanges();
-    });
-  </script>
+  summaryBox.style.display="block";
+  summaryBox.textContent=`Summary: ${insertions} insertion${insertions!==1?"s":""}, ${deletions} deletion${deletions!==1?"s":""}.`;
+}
+originalBox.addEventListener("input",generateDiff);
+modifiedBox.addEventListener("input",generateDiff);
+flipButton.addEventListener("click",()=>{
+  const temp=originalBox.value;
+  originalBox.value=modifiedBox.value;
+  modifiedBox.value=temp;
+  generateDiff();
+  logoFlipped=!logoFlipped;
+  logoRed.className=logoFlipped?"blue":"red";
+  logoBen.className=logoFlipped?"red":"blue";
+});
+clearButton.addEventListener("click",()=>{
+  originalBox.value="";
+  modifiedBox.value="";
+  outputBox.innerHTML="";
+  summaryBox.style.display="none";
+  diffElements=[];
+  currentIndex=-1;
+  prevButton.classList.add("disabled-button");
+  nextButton.classList.add("disabled-button");
+});
+styleButton.addEventListener("click",()=>{
+  styleMode=styleMode==="Standard"?"Softer":"Standard";
+  styleButton.textContent=styleMode==="Standard"?"Standard Colours":"Softer Colours";
+  generateDiff();
+});
+emphasisButton.addEventListener("click",()=>{
+  emphasisMode=emphasisMode==="No Highlight"?"Highlight":"No Highlight";
+  emphasisButton.textContent=emphasisMode;
+  generateDiff();
+});
+fontDownButton.addEventListener("click",()=>{if(baseFontSize>minFontSize){baseFontSize--;generateDiff();}});
+fontUpButton.addEventListener("click",()=>{if(baseFontSize<maxFontSize){baseFontSize++;generateDiff();}});
+copyButton.addEventListener("click",()=>{
+  const range=document.createRange();
+  range.selectNodeContents(outputBox);
+  const selection=window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  try{
+    document.execCommand("copy");
+    copyButton.textContent="Copied!";
+    setTimeout(()=>copyButton.textContent="Copy Benline",1000);
+  }catch(err){alert("Copy not supported.");}
+  selection.removeAllRanges();
+});
+nextButton.addEventListener("click",()=>{
+  if(!diffElements.length)return;
+  if(currentIndex>=0){
+    document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
+  }
+  currentIndex=(currentIndex+1)%diffElements.length;
+  const el=document.getElementById(diffElements[currentIndex]);
+  el.classList.add("highlighted-diff");
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+});
+prevButton.addEventListener("click",()=>{
+  if(!diffElements.length)return;
+  if(currentIndex>=0){
+    document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
+  }
+  currentIndex=(currentIndex-1+diffElements.length)%diffElements.length;
+  const el=document.getElementById(diffElements[currentIndex]);
+  el.classList.add("highlighted-diff");
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+});
+</script>
 </body>
 </html>
