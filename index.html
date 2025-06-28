@@ -18,18 +18,23 @@ header {
   font-size:2rem;
   position:relative;
 }
-.badge {
+.badge, .feature-request {
   font-size:0.75rem;
-  border:1px solid #f4c27b;
+  border:1px solid;
   border-radius:999px;
   padding:0.2rem 0.6rem;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.badge {
+  border-color:#f4c27b;
   background:#fff8d1;
   color:#b58900;
-  white-space:nowrap;
-  position:absolute;
-  right:1rem;
-  top:50%;
-  transform:translateY(-50%);
+}
+.feature-request {
+  border-color:#00ff00;
+  background:#eaffea;
+  color:#008000;
 }
 .red {color:red;text-decoration:line-through;}
 .blue {color:blue;text-decoration:underline;}
@@ -45,6 +50,10 @@ header {
   gap:0.5rem;
   flex-wrap:wrap;
   position:relative;
+}
+.toolbar-inner .font-controls {
+  display:flex;
+  gap:4px;
 }
 .label-container {
   display:flex;
@@ -124,6 +133,10 @@ textarea, .output {
   background:#eee;
   transition:background 0.3s ease, border 0.3s ease;
 }
+#font-size-display {
+  background:#fff !important;
+  cursor:default;
+}
 #colour-button {
   border:1px solid transparent;
   background:
@@ -172,9 +185,17 @@ textarea, .output {
 </head>
 <body>
 <header>
-  <span id="logo-red" class="red">Red</span><span id="logo-ben" class="blue">Ben</span><span class="black">line</span>
-  <span class="badge">in Beta Mode 😎</span>
+  <div style="position:relative;">
+    <div style="text-align:center;">
+      <span id="logo-red" class="red">Red</span><span id="logo-ben" class="blue">Ben</span><span class="black">line</span>
+    </div>
+    <div style="position:absolute;top:50%;transform:translateY(-50%);right:0;display:flex;gap:0.5rem;">
+      <span class="feature-request" onclick="window.location.href='mailto:benleigh0@gmail.com?subject=RE:%20Benline%20suggestion'">Submit feature request ✉️</span>
+      <span class="badge">in Beta Mode 😎</span>
+    </div>
+  </div>
 </header>
+
 
 <div class="review-toolbar">
   <div class="review-toolbar-inner">
@@ -187,9 +208,11 @@ textarea, .output {
   <div class="toolbar-inner">
     <button id="colour-button">Colour</button>
     <button id="highlight-button">Highlight</button>
-    <button id="font-down">−</button>
-    <div id="font-size-display">14</div>
-    <button id="font-up">+</button>
+    <div class="font-controls">
+      <button id="font-down">−</button>
+      <div id="font-size-display">14</div>
+      <button id="font-up">+</button>
+    </div>
     <button id="flip-button">Flip Text</button>
     <button id="clear-button">Clear All</button>
     <div style="position:relative;">
@@ -490,6 +513,8 @@ prevButton.addEventListener("click", () => {
   el.classList.add("highlighted-diff");
   el.scrollIntoView({ behavior: "smooth", block: "center" });
 });
+</script>
+
 </script>
 </body>
 </html>
