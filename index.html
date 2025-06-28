@@ -1,93 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Benline</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/diff-match-patch@1.0.5/index.min.js"></script>
-  <style>
-    body { margin:0; font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background:#f9f9f9; }
-    header { background:#fff; padding:1rem; text-align:center; font-size:2rem; position:relative; }
-    .badge { font-size:0.75rem; border:1px solid #f4c27b; border-radius:999px; padding:0.2rem 0.6rem; background:#fff8d1; color:#b58900; white-space:nowrap; position:absolute; right:1rem; top:50%; transform:translateY(-50%); }
-    .red {color:red;text-decoration:line-through;}
-    .blue {color:blue;text-decoration:underline;}
-    .black {color:black;}
-    .toolbar, .review-toolbar { background:#fff; }
-    .toolbar-inner, .review-toolbar-inner { display:flex; justify-content:flex-end; align-items:center; padding:0.5rem 1rem; gap:0.5rem; flex-wrap:wrap; position:relative; }
-    .label-container { display:flex; font-size:0.85rem; color:#666; background:#fff; padding:0.5rem 1rem 0 1rem; }
-    .label-container div { flex:1; text-align:center; position:relative; }
-    .container { display:flex; align-items:stretch; height:calc(100vh - 230px); padding:0 1rem 1rem 1rem; box-sizing:border-box; }
-    .column { flex:1; display:flex; flex-direction:column; border-right:1px solid #ddd; margin-bottom:10px; }
-    .column:last-child { border-right:none; }
-    textarea, .output { flex:1; height:100%; padding:1rem; line-height:1.5; font-size:14px; border:none; resize:none; outline:none; font-family:'Inter', monospace; white-space:pre-wrap; background:#fff; box-sizing:border-box; overflow-y:auto; vertical-align:top; margin:0; min-height:300px; }
-    .output { overflow-x:hidden; word-wrap:break-word; overflow-wrap:anywhere; }
-    .output-wrapper { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-    .summary { padding:0.5rem 1rem; font-size:0.85rem; color:#333; border-top:1px solid #ddd; background:#fefefe; }
-    #style-button,#emphasis-button,#flip-button,#clear-button,#copy-button,
-    #font-down,#font-up,#font-size-display,#prev-button,#next-button { font-size:0.75rem; padding:2px 6px; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#eee; }
-    #font-size-display { background:#fff; cursor:default; }
-    #style-button:hover,#emphasis-button:hover,#flip-button:hover,
-    #clear-button:hover,#copy-button:hover,#font-down:hover,#font-up:hover,
-    #prev-button:hover,#next-button:hover { background:#ddd; }
-    .disabled-button { background:#fff; color:#aaa; cursor:default; }
-    #copy-dropdown { display:none; position:absolute; flex-direction:column; z-index:10; right:0; margin-top:8px; }
-    #copy-dropdown button { font-size:0.75rem; padding:2px 6px; border:1px solid #ccc; border-radius:4px; cursor:pointer; background:#eee; margin-top:2px; white-space:nowrap; }
-    #copy-dropdown button:hover { background:#ddd; }
-    .highlighted-diff { outline:2px solid orange; outline-offset:2px; }
-  </style>
+<meta charset="UTF-8" />
+<title>Benline</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/diff-match-patch@1.0.5/index.min.js"></script>
+<style>
+body {
+  margin:0;
+  font-family:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background:#f9f9f9;
+}
+header {
+  background:#fff;
+  padding:1rem;
+  text-align:center;
+  font-size:2rem;
+  position:relative;
+}
+.badge {
+  font-size:0.75rem;
+  border:1px solid #f4c27b;
+  border-radius:999px;
+  padding:0.2rem 0.6rem;
+  background:#fff8d1;
+  color:#b58900;
+  white-space:nowrap;
+  position:absolute;
+  right:1rem;
+  top:50%;
+  transform:translateY(-50%);
+}
+.red {color:red;text-decoration:line-through;}
+.blue {color:blue;text-decoration:underline;}
+.black {color:black;}
+.toolbar, .review-toolbar {
+  background:#fff;
+}
+.toolbar-inner, .review-toolbar-inner {
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:0.5rem 1rem;
+  gap:0.5rem;
+  flex-wrap:wrap;
+  position:relative;
+}
+.label-container {
+  display:flex;
+  font-size:0.85rem;
+  color:#666;
+  background:#fff;
+  padding:0.5rem 1rem 0 1rem;
+}
+.label-container div {
+  flex:1;
+  text-align:center;
+}
+.container {
+  display:flex;
+  align-items:stretch;
+  height:calc(100vh - 230px);
+  padding:0 1rem 1rem 1rem;
+  box-sizing:border-box;
+}
+.column {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  border-right:1px solid #ddd;
+  margin-bottom:10px;
+}
+.column:last-child {
+  border-right:none;
+}
+textarea, .output {
+  flex:1;
+  height:100%;
+  padding:1rem;
+  line-height:1.5;
+  font-size:14px;
+  border:none;
+  resize:none;
+  outline:none;
+  font-family:'Inter', monospace;
+  white-space:pre-wrap;
+  background:#fff;
+  box-sizing:border-box;
+  overflow-y:auto;
+  vertical-align:top;
+  margin:0;
+  min-height:300px;
+  transition:background-color 0.3s ease;
+}
+.flash {
+  background-color:#fff8c4 !important;
+}
+.output {
+  overflow-x:hidden;
+  word-wrap:break-word;
+  overflow-wrap:anywhere;
+}
+.output-wrapper {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.summary {
+  padding:0.5rem 1rem;
+  font-size:0.85rem;
+  color:#333;
+  border-top:1px solid #ddd;
+  background:#fefefe;
+}
+#colour-button,#highlight-button,#flip-button,#clear-button,#copy-button,
+#font-down,#font-up,#font-size-display,#prev-button,#next-button {
+  font-size:0.75rem;
+  padding:2px 6px;
+  border:1px solid #ccc;
+  border-radius:4px;
+  cursor:pointer;
+  background:#eee;
+  transition:background 0.3s ease, border 0.3s ease;
+}
+#colour-button {
+  border:1px solid transparent;
+  background:
+    linear-gradient(#eee, #eee) padding-box,
+    var(--gradient, linear-gradient(to right, red 50%, blue 50%)) border-box;
+  border-radius:4px;
+}
+#highlight-button.highlight-off:hover {
+  background:#ddd;
+}
+#highlight-button:hover,
+#flip-button:hover,
+#clear-button:hover,
+#copy-button:hover,
+#font-down:hover,
+#font-up:hover,
+#prev-button:hover,
+#next-button:hover {
+  background:#ddd;
+}
+.disabled-button { background:#fff; color:#aaa; cursor:default; }
+#copy-dropdown {
+  display:none;
+  position:absolute;
+  flex-direction:column;
+  z-index:10;
+  right:0;
+  margin-top:8px;
+}
+#copy-dropdown button {
+  font-size:0.75rem;
+  padding:2px 6px;
+  border:1px solid #ccc;
+  border-radius:4px;
+  cursor:pointer;
+  background:#eee;
+  margin-top:2px;
+  white-space:nowrap;
+}
+#copy-dropdown button:hover { background:#ddd; }
+.highlighted-diff {
+  outline:2px solid orange;
+  outline-offset:2px;
+}
+</style>
 </head>
 <body>
-  <header>
-    <span id="logo-red" class="red">Red</span><span id="logo-ben" class="blue">Ben</span><span class="black">line</span>
-    <span class="badge">in Beta Mode 😎</span>
-  </header>
+<header>
+  <span id="logo-red" class="red">Red</span><span id="logo-ben" class="blue">Ben</span><span class="black">line</span>
+  <span class="badge">in Beta Mode 😎</span>
+</header>
 
-  <div class="review-toolbar">
-    <div class="review-toolbar-inner">
-      <button id="prev-button" class="disabled-button">Previous</button>
-      <button id="next-button" class="disabled-button">Next</button>
-    </div>
+<div class="review-toolbar">
+  <div class="review-toolbar-inner">
+    <button id="prev-button" class="disabled-button">Previous</button>
+    <button id="next-button" class="disabled-button">Next</button>
   </div>
+</div>
 
-  <div class="toolbar">
-    <div class="toolbar-inner">
-      <button id="style-button">Standard Colours</button>
-      <button id="emphasis-button">No Highlight</button>
-      <button id="font-down">−</button>
-      <div id="font-size-display">14</div>
-      <button id="font-up">+</button>
-      <button id="flip-button">Flip Text</button>
-      <button id="clear-button">Clear All</button>
-      <div style="position:relative;">
-        <button id="copy-button">Copy</button>
-        <div id="copy-dropdown">
-          <button id="copy-modified-benline">Modified and Benline</button>
-          <button id="copy-benline-only">Benline</button>
-        </div>
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <button id="colour-button">Colour</button>
+    <button id="highlight-button">Highlight</button>
+    <button id="font-down">−</button>
+    <div id="font-size-display">14</div>
+    <button id="font-up">+</button>
+    <button id="flip-button">Flip Text</button>
+    <button id="clear-button">Clear All</button>
+    <div style="position:relative;">
+      <button id="copy-button">Copy</button>
+      <div id="copy-dropdown">
+        <button id="copy-modified-benline">Modified and Benline</button>
+        <button id="copy-benline-only">Benline</button>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="label-container">
-    <div>Original</div><div>Modified</div><div>Benline</div>
-  </div>
+<div class="label-container">
+  <div>Original</div><div>Modified</div><div>Benline</div>
+</div>
 
-  <div class="container">
-    <div class="column"><textarea id="original" placeholder="Original text..."></textarea></div>
-    <div class="column"><textarea id="modified" placeholder="Modified text..."></textarea></div>
-    <div class="column output-wrapper">
-      <div class="output" id="output"></div>
-      <div id="summary" class="summary" style="display:none;"></div>
-    </div>
+<div class="container">
+  <div class="column"><textarea id="original" placeholder="Original text..."></textarea></div>
+  <div class="column"><textarea id="modified" placeholder="Modified text..."></textarea></div>
+  <div class="column output-wrapper">
+    <div class="output" id="output"></div>
+    <div id="summary" class="summary" style="display:none;"></div>
   </div>
+</div>
 
 <script>
 const originalBox = document.getElementById("original");
 const modifiedBox = document.getElementById("modified");
 const outputBox = document.getElementById("output");
 const summaryBox = document.getElementById("summary");
-const styleButton = document.getElementById("style-button");
-const emphasisButton = document.getElementById("emphasis-button");
+const colourButton = document.getElementById("colour-button");
+const highlightButton = document.getElementById("highlight-button");
 const fontUpButton = document.getElementById("font-up");
 const fontDownButton = document.getElementById("font-down");
 const fontSizeDisplay = document.getElementById("font-size-display");
@@ -102,8 +236,23 @@ const nextButton = document.getElementById("next-button");
 const logoRed = document.getElementById("logo-red");
 const logoBen = document.getElementById("logo-ben");
 
-let styleMode = "Standard";
-let emphasisMode = "No Highlight";
+let styleModes = [
+  { name:"Standard", del:"red", ins:"blue", gradient:"linear-gradient(to right, red 50%, blue 50%)" },
+  { name:"PinkCyan", del:"#FF33CC", ins:"#00FFFF", gradient:"linear-gradient(to right, #FF33CC 50%, #00FFFF 50%)" },
+  { name:"PurpleGreen", del:"#9933FF", ins:"#00FF00", gradient:"linear-gradient(to right, #9933FF 50%, #00FF00 50%)" },
+  { name:"RedBlueDark", del:"#B22222", ins:"#00008B", gradient:"linear-gradient(to right, #B22222 50%, #00008B 50%)" },
+  { name:"OrangeGreen", del:"#FF9900", ins:"#008000", gradient:"linear-gradient(to right, #FF9900 50%, #008000 50%)" }
+];
+let styleModeIndex = 0;
+
+let highlightModes = [
+  { name:"Off", color:null },
+  { name:"Yellow", color:"#ffff00" },
+  { name:"Green", color:"#00ff00" },
+  { name:"Cyan", color:"#00ffff" }
+];
+let highlightIndex = 0;
+
 let baseFontSize = 14;
 const minFontSize = 10;
 const maxFontSize = 20;
@@ -112,6 +261,18 @@ let diffElements = [];
 let currentIndex = -1;
 let logoFlipped = false;
 
+function updateColourButton(){
+  colourButton.style.setProperty("--gradient", styleModes[styleModeIndex].gradient);
+}
+function updateHighlightButton(){
+  if (highlightIndex === 0) {
+    highlightButton.style.background = "#eee";
+    highlightButton.classList.add("highlight-off");
+  } else {
+    highlightButton.style.background = highlightModes[highlightIndex].color;
+    highlightButton.classList.remove("highlight-off");
+  }
+}
 function escapeHTML(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
@@ -147,27 +308,26 @@ function generateDiff() {
   let idCounter = 0;
   let insertions = 0;
   let deletions = 0;
+  const mode = styleModes[styleModeIndex];
 
   for (const [op, data] of diffs) {
     const safe = escapeHTML(data);
     let baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
     let emphasis = '';
-    if (emphasisMode === "Highlight" && op !== 0) {
-      emphasis = "background-color:#ffff99;";
+    if (highlightIndex !== 0 && op !== 0) {
+      emphasis = `background-color:${highlightModes[highlightIndex].color};`;
     }
 
     if (op === 0) {
       result += `<span class="black" style="${baseStyle}">${safe}</span>`;
     } else if (op === -1) {
-      const color = styleMode === "Standard" ? "red" : "#BA55D3";
       const id = `diff-${idCounter++}`;
-      result += `<span id="${id}" style="${baseStyle}color:${color};text-decoration:line-through;${emphasis}">${safe}</span>`;
+      result += `<span id="${id}" style="${baseStyle}color:${mode.del};text-decoration:line-through;${emphasis}">${safe}</span>`;
       diffElements.push(id);
       deletions++;
     } else if (op === 1) {
-      const color = styleMode === "Standard" ? "blue" : "#00CED1";
       const id = `diff-${idCounter++}`;
-      result += `<span id="${id}" style="${baseStyle}color:${color};text-decoration:underline;${emphasis}">${safe}</span>`;
+      result += `<span id="${id}" style="${baseStyle}color:${mode.ins};text-decoration:underline;${emphasis}">${safe}</span>`;
       diffElements.push(id);
       insertions++;
     }
@@ -187,6 +347,42 @@ function generateDiff() {
 
 originalBox.addEventListener("input", generateDiff);
 modifiedBox.addEventListener("input", generateDiff);
+
+originalBox.addEventListener("paste", () => {
+  originalBox.classList.add("flash");
+  setTimeout(() => originalBox.classList.remove("flash"), 300);
+});
+modifiedBox.addEventListener("paste", () => {
+  modifiedBox.classList.add("flash");
+  setTimeout(() => modifiedBox.classList.remove("flash"), 300);
+});
+
+colourButton.addEventListener("click", () => {
+  styleModeIndex = (styleModeIndex + 1) % styleModes.length;
+  updateColourButton();
+  generateDiff();
+});
+
+highlightButton.addEventListener("click", () => {
+  highlightIndex = (highlightIndex + 1) % highlightModes.length;
+  updateHighlightButton();
+  generateDiff();
+});
+
+updateColourButton();
+updateHighlightButton();
+
+fontDownButton.addEventListener("click", () => {
+  if (baseFontSize > minFontSize) { baseFontSize--; }
+  updateTextAreasFont();
+  generateDiff();
+});
+
+fontUpButton.addEventListener("click", () => {
+  if (baseFontSize < maxFontSize) { baseFontSize++; }
+  updateTextAreasFont();
+  generateDiff();
+});
 
 flipButton.addEventListener("click", () => {
   const temp = originalBox.value;
@@ -209,35 +405,10 @@ clearButton.addEventListener("click", () => {
   nextButton.classList.add("disabled-button");
 });
 
-styleButton.addEventListener("click", () => {
-  styleMode = styleMode === "Standard" ? "Softer" : "Standard";
-  styleButton.textContent = styleMode === "Standard" ? "Standard Colours" : "Softer Colours";
-  generateDiff();
-});
-
-emphasisButton.addEventListener("click", () => {
-  emphasisMode = emphasisMode === "No Highlight" ? "Highlight" : "No Highlight";
-  emphasisButton.textContent = emphasisMode;
-  generateDiff();
-});
-
-fontDownButton.addEventListener("click", () => {
-  if (baseFontSize > minFontSize) {baseFontSize--;}
-  updateTextAreasFont();
-  generateDiff();
-});
-
-fontUpButton.addEventListener("click", () => {
-  if (baseFontSize < maxFontSize) {baseFontSize++;}
-  updateTextAreasFont();
-  generateDiff();
-});
-
 copyButton.addEventListener("click", () => {
   copyDropdown.style.display = copyDropdown.style.display === "flex" ? "none" : "flex";
 });
 
-// Hide dropdown if clicking elsewhere
 document.addEventListener("click", (event) => {
   if (!copyButton.contains(event.target) && !copyDropdown.contains(event.target)) {
     copyDropdown.style.display = "none";
@@ -247,30 +418,23 @@ document.addEventListener("click", (event) => {
 copyModifiedBenline.addEventListener("click", () => {
   const tempDiv = document.createElement("div");
   const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;`;
-
   const modifiedDiv = document.createElement("div");
   modifiedDiv.textContent = modifiedBox.value;
   modifiedDiv.setAttribute("style", baseStyle);
-
   const separatorDiv = document.createElement("div");
   separatorDiv.textContent = "***";
   separatorDiv.setAttribute("style", baseStyle);
-
   const benlineDiv = document.createElement("div");
   benlineDiv.innerHTML = outputBox.innerHTML;
-  benlineDiv.setAttribute("style","background:none;");
+  benlineDiv.setAttribute("style", "background:none;");
   benlineDiv.querySelectorAll("span").forEach(span => {
     span.style.fontSize = `${baseFontSize}px`;
     span.style.background = "none";
   });
-
-  tempDiv.style.background = "none";
   tempDiv.appendChild(modifiedDiv);
   tempDiv.appendChild(separatorDiv);
   tempDiv.appendChild(benlineDiv);
-
   document.body.appendChild(tempDiv);
-
   const range = document.createRange();
   range.selectNodeContents(tempDiv);
   const selection = window.getSelection();
@@ -278,11 +442,13 @@ copyModifiedBenline.addEventListener("click", () => {
   selection.addRange(range);
   try {
     document.execCommand("copy");
-    copyButton.textContent = "Copied!";
-    setTimeout(() => copyButton.textContent = "Copy", 1000);
-  } catch(err) {
-    alert("Copy not supported.");
-  }
+    modifiedBox.classList.add("flash");
+    outputBox.classList.add("flash");
+    setTimeout(() => {
+      modifiedBox.classList.remove("flash");
+      outputBox.classList.remove("flash");
+    }, 300);
+  } catch (err) { alert("Copy not supported."); }
   selection.removeAllRanges();
   document.body.removeChild(tempDiv);
   copyDropdown.style.display = "none";
@@ -296,11 +462,9 @@ copyBenlineOnly.addEventListener("click", () => {
   selection.addRange(range);
   try {
     document.execCommand("copy");
-    copyButton.textContent = "Copied!";
-    setTimeout(() => copyButton.textContent = "Copy", 1000);
-  } catch(err) {
-    alert("Copy not supported.");
-  }
+    outputBox.classList.add("flash");
+    setTimeout(() => outputBox.classList.remove("flash"), 300);
+  } catch (err) { alert("Copy not supported."); }
   selection.removeAllRanges();
   copyDropdown.style.display = "none";
 });
