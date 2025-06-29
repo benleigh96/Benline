@@ -36,9 +36,6 @@ header {
   background:#eaffea;
   color:#008000;
 }
-.red {color:red;text-decoration:line-through;}
-.blue {color:blue;text-decoration:underline;}
-.black {color:black;}
 .toolbar, .review-toolbar {
   background:#fff;
 }
@@ -187,7 +184,7 @@ textarea, .output {
 <header>
   <div style="position:relative;">
     <div style="text-align:center;">
-      <span id="logo-red" class="red">Red</span><span id="logo-ben" class="blue">Ben</span><span class="black">line</span>
+      <span id="logo-red">Red</span><span id="logo-ben">Ben</span><span class="black">line</span>
     </div>
     <div style="position:absolute;top:50%;transform:translateY(-50%);right:0;display:flex;gap:0.5rem;">
       <span class="feature-request" onclick="window.location.href='mailto:benleigh0@gmail.com?subject=RE:%20Benline%20suggestion'">Submit Feature Request ✉️</span>
@@ -195,7 +192,6 @@ textarea, .output {
     </div>
   </div>
 </header>
-
 
 <div class="review-toolbar">
   <div class="review-toolbar-inner">
@@ -239,6 +235,7 @@ textarea, .output {
 </div>
 
 <script>
+// All variables and configuration
 const originalBox = document.getElementById("original");
 const modifiedBox = document.getElementById("modified");
 const outputBox = document.getElementById("output");
@@ -284,13 +281,28 @@ let diffElements = [];
 let currentIndex = -1;
 let logoFlipped = false;
 
+let lastOriginalText = "";
+let lastModifiedText = "";
+
+// Functions follow...
+
+function updateLogoColours() {
+  const mode = styleModes[styleModeIndex];
+  if (logoFlipped) {
+    logoRed.style.color = mode.ins;
+    logoRed.style.textDecoration = "underline";
+    logoBen.style.color = mode.del;
+    logoBen.style.textDecoration = "line-through";
+  } else {
+    logoRed.style.color = mode.del;
+    logoRed.style.textDecoration = "line-through";
+    logoBen.style.color = mode.ins;
+    logoBen.style.textDecoration = "underline";
+  }
+}
+
 function updateColourButton(){
   colourButton.style.setProperty("--gradient", styleModes[styleModeIndex].gradient);
-}
-function updateLogoColours(){
-  const mode = styleModes[styleModeIndex];
-  logoRed.style.color = mode.del;
-  logoBen.style.color = mode.ins;
 }
 function updateHighlightButton(){
   if (highlightIndex === 0) {
@@ -373,6 +385,7 @@ function generateDiff() {
   summaryBox.textContent = `Summary: ${insertions} insertion${insertions !== 1 ? "s" : ""}, ${deletions} deletion${deletions !== 1 ? "s" : ""}.`;
 }
 
+// Event listeners
 originalBox.addEventListener("input", generateDiff);
 modifiedBox.addEventListener("input", generateDiff);
 
@@ -420,19 +433,32 @@ flipButton.addEventListener("click", () => {
   modifiedBox.value = temp;
   generateDiff();
   logoFlipped = !logoFlipped;
-  logoRed.className = logoFlipped ? "blue" : "red";
-  logoBen.className = logoFlipped ? "red" : "blue";
+  updateLogoColours();
 });
 
 clearButton.addEventListener("click", () => {
-  originalBox.value = "";
-  modifiedBox.value = "";
-  outputBox.innerHTML = "";
-  summaryBox.style.display = "none";
-  diffElements = [];
-  currentIndex = -1;
-  prevButton.classList.add("disabled-button");
-  nextButton.classList.add("disabled-button");
+  if (clearButton.textContent === "Clear All") {
+    lastOriginalText = originalBox.value;
+    lastModifiedText = modifiedBox.value;
+    originalBox.value = "";
+    modifiedBox.value = "";
+    outputBox.innerHTML = "";
+    summaryBox.style.display = "none";
+    diffElements = [];
+    currentIndex = -1;
+    prevButton.classList.add("disabled-button");
+    nextButton.classList.add("disabled-button");
+    clearButton.textContent = "Restore";
+clearButton.style.background = "#fff8c4"; // pastel yellow background
+clearButton.style.borderColor = "#f4c27b"; // matching border
+  } else {
+    originalBox.value = lastOriginalText;
+    modifiedBox.value = lastModifiedText;
+    generateDiff();
+    clearButton.textContent = "Clear All";
+clearButton.style.background = "#eee"; // reset to default
+clearButton.style.borderColor = "#ccc"; // reset to default
+  }
 });
 
 copyButton.addEventListener("click", () => {
@@ -447,11 +473,9 @@ document.addEventListener("click", (event) => {
 
 copyModifiedBenline.addEventListener("click", async () => {
   const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
-
   const modifiedHTML = `<div style="${baseStyle}">${modifiedBox.value.replace(/\n/g, '<br>')}</div>`;
   const separatorHTML = `<div style="${baseStyle}">***</div>`;
   const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
-
   const combinedHTML = modifiedHTML + separatorHTML + benlineHTML;
 
   try {
@@ -470,15 +494,12 @@ copyModifiedBenline.addEventListener("click", async () => {
   } catch (err) {
     alert("Copy failed: " + err);
   }
-
   copyDropdown.style.display = "none";
 });
 
 copyBenlineOnly.addEventListener("click", async () => {
   const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
-
   const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
-
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -491,10 +512,8 @@ copyBenlineOnly.addEventListener("click", async () => {
   } catch (err) {
     alert("Copy failed: " + err);
   }
-
   copyDropdown.style.display = "none";
 });
-
 
 nextButton.addEventListener("click", () => {
   if (!diffElements.length) return;
@@ -517,8 +536,6 @@ prevButton.addEventListener("click", () => {
   el.classList.add("highlighted-diff");
   el.scrollIntoView({ behavior: "smooth", block: "center" });
 });
-</script>
-
 </script>
 </body>
 </html>
