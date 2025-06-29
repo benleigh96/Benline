@@ -287,6 +287,11 @@ let logoFlipped = false;
 function updateColourButton(){
   colourButton.style.setProperty("--gradient", styleModes[styleModeIndex].gradient);
 }
+function updateLogoColours(){
+  const mode = styleModes[styleModeIndex];
+  logoRed.style.color = mode.del;
+  logoBen.style.color = mode.ins;
+}
 function updateHighlightButton(){
   if (highlightIndex === 0) {
     highlightButton.style.background = "#eee";
@@ -383,6 +388,7 @@ modifiedBox.addEventListener("paste", () => {
 colourButton.addEventListener("click", () => {
   styleModeIndex = (styleModeIndex + 1) % styleModes.length;
   updateColourButton();
+  updateLogoColours();
   generateDiff();
 });
 
@@ -393,6 +399,7 @@ highlightButton.addEventListener("click", () => {
 });
 
 updateColourButton();
+updateLogoColours();
 updateHighlightButton();
 
 fontDownButton.addEventListener("click", () => {
@@ -438,59 +445,56 @@ document.addEventListener("click", (event) => {
   }
 });
 
-copyModifiedBenline.addEventListener("click", () => {
-  const tempDiv = document.createElement("div");
-  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;`;
-  const modifiedDiv = document.createElement("div");
-  modifiedDiv.textContent = modifiedBox.value;
-  modifiedDiv.setAttribute("style", baseStyle);
-  const separatorDiv = document.createElement("div");
-  separatorDiv.textContent = "***";
-  separatorDiv.setAttribute("style", baseStyle);
-  const benlineDiv = document.createElement("div");
-  benlineDiv.innerHTML = outputBox.innerHTML;
-  benlineDiv.setAttribute("style", "background:none;");
-  benlineDiv.querySelectorAll("span").forEach(span => {
-    span.style.fontSize = `${baseFontSize}px`;
-    span.style.background = "none";
-  });
-  tempDiv.appendChild(modifiedDiv);
-  tempDiv.appendChild(separatorDiv);
-  tempDiv.appendChild(benlineDiv);
-  document.body.appendChild(tempDiv);
-  const range = document.createRange();
-  range.selectNodeContents(tempDiv);
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
+copyModifiedBenline.addEventListener("click", async () => {
+  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
+
+  const modifiedHTML = `<div style="${baseStyle}">${modifiedBox.value.replace(/\n/g, '<br>')}</div>`;
+  const separatorHTML = `<div style="${baseStyle}">***</div>`;
+  const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
+
+  const combinedHTML = modifiedHTML + separatorHTML + benlineHTML;
+
   try {
-    document.execCommand("copy");
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([combinedHTML], { type: "text/html" }),
+        "text/plain": new Blob([modifiedBox.value + "\n***\n" + outputBox.innerText], { type: "text/plain" })
+      })
+    ]);
     modifiedBox.classList.add("flash");
     outputBox.classList.add("flash");
     setTimeout(() => {
       modifiedBox.classList.remove("flash");
       outputBox.classList.remove("flash");
     }, 300);
-  } catch (err) { alert("Copy not supported."); }
-  selection.removeAllRanges();
-  document.body.removeChild(tempDiv);
+  } catch (err) {
+    alert("Copy failed: " + err);
+  }
+
   copyDropdown.style.display = "none";
 });
 
-copyBenlineOnly.addEventListener("click", () => {
-  const range = document.createRange();
-  range.selectNodeContents(outputBox);
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
+copyBenlineOnly.addEventListener("click", async () => {
+  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
+
+  const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
+
   try {
-    document.execCommand("copy");
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([benlineHTML], { type: "text/html" }),
+        "text/plain": new Blob([outputBox.innerText], { type: "text/plain" })
+      })
+    ]);
     outputBox.classList.add("flash");
     setTimeout(() => outputBox.classList.remove("flash"), 300);
-  } catch (err) { alert("Copy not supported."); }
-  selection.removeAllRanges();
+  } catch (err) {
+    alert("Copy failed: " + err);
+  }
+
   copyDropdown.style.display = "none";
 });
+
 
 nextButton.addEventListener("click", () => {
   if (!diffElements.length) return;
