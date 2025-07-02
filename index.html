@@ -18,6 +18,8 @@ header {
   font-size:2rem;
   position:relative;
 }
+#logo-red { color:red; }
+#logo-ben { color:blue; text-decoration:underline; }
 .badge, .feature-request {
   font-size:0.75rem;
   border:1px solid;
@@ -75,14 +77,12 @@ header {
   display:flex;
   flex-direction:column;
   border-right:1px solid #ddd;
-  margin-bottom:10px;
 }
 .column:last-child {
   border-right:none;
 }
 textarea, .output {
   flex:1;
-  height:100%;
   padding:1rem;
   line-height:1.5;
   font-size:14px;
@@ -94,25 +94,11 @@ textarea, .output {
   background:#fff;
   box-sizing:border-box;
   overflow-y:auto;
-  vertical-align:top;
-  margin:0;
   min-height:300px;
-  transition:background-color 0.3s ease;
 }
-.flash {
-  background-color:#fff8c4 !important;
-}
-.output {
-  overflow-x:hidden;
-  word-wrap:break-word;
-  overflow-wrap:anywhere;
-}
-.output-wrapper {
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
+.flash { background-color:#fff8c4 !important; }
+.output { overflow-wrap:anywhere; }
+.output-wrapper { flex:1; display:flex; flex-direction:column; overflow:hidden; }
 .summary {
   padding:0.5rem 1rem;
   font-size:0.85rem;
@@ -128,7 +114,6 @@ textarea, .output {
   border-radius:4px;
   cursor:pointer;
   background:#eee;
-  transition:background 0.3s ease, border 0.3s ease;
 }
 #font-size-display {
   background:#fff !important;
@@ -138,21 +123,8 @@ textarea, .output {
   border:1px solid transparent;
   background:
     linear-gradient(#eee, #eee) padding-box,
-    var(--gradient, linear-gradient(to right, red 50%, blue 50%)) border-box;
+    var(--gradient, linear-gradient(to right, #ff0000 50%, #0000ff 50%)) border-box;
   border-radius:4px;
-}
-#highlight-button.highlight-off:hover {
-  background:#ddd;
-}
-#highlight-button:hover,
-#flip-button:hover,
-#clear-button:hover,
-#copy-button:hover,
-#font-down:hover,
-#font-up:hover,
-#prev-button:hover,
-#next-button:hover {
-  background:#ddd;
 }
 .disabled-button { background:#fff; color:#aaa; cursor:default; }
 #copy-dropdown {
@@ -235,7 +207,28 @@ textarea, .output {
 </div>
 
 <script>
-// All variables and configuration
+const styleModes = [
+  { name:"Palette1", del:"#ff0000", ins:"#0000ff", gradient:"linear-gradient(to right, #ff0000 50%, #0000ff 50%)" },
+  { name:"Palette2", del:"#ff33cc", ins:"#66ccff", gradient:"linear-gradient(to right, #ff33cc 50%, #66ccff 50%)" },
+  { name:"Palette3", del:"#9933ff", ins:"#0099ff", gradient:"linear-gradient(to right, #9933ff 50%, #0099ff 50%)" },
+  { name:"Palette4", del:"#994400", ins:"#003366", gradient:"linear-gradient(to right, #994400 50%, #003366 50%)" },
+  { name:"Palette5", del:"#ff9900", ins:"#000099", gradient:"linear-gradient(to right, #ff9900 50%, #000099 50%)" }
+];
+let styleModeIndex = 0;
+const highlightModes = [
+  { name:"Off", color:null },
+  { name:"Yellow", color:"#ffff00" },
+  { name:"Green", color:"#00ff00" },
+  { name:"Cyan", color:"#00ffff" }
+];
+let highlightIndex = 0;
+
+let baseFontSize = 14;
+const minFontSize = 10;
+const maxFontSize = 20;
+let diffElements = [];
+let currentIndex = -1;
+
 const originalBox = document.getElementById("original");
 const modifiedBox = document.getElementById("modified");
 const outputBox = document.getElementById("output");
@@ -253,73 +246,18 @@ const copyModifiedBenline = document.getElementById("copy-modified-benline");
 const copyBenlineOnly = document.getElementById("copy-benline-only");
 const prevButton = document.getElementById("prev-button");
 const nextButton = document.getElementById("next-button");
-const logoRed = document.getElementById("logo-red");
-const logoBen = document.getElementById("logo-ben");
-
-let styleModes = [
-  { name:"Standard", del:"red", ins:"blue", gradient:"linear-gradient(to right, red 50%, blue 50%)" },
-  { name:"PinkCyan", del:"#FF33CC", ins:"#00FFFF", gradient:"linear-gradient(to right, #FF33CC 50%, #00FFFF 50%)" },
-  { name:"PurpleGreen", del:"#9933FF", ins:"#00FF00", gradient:"linear-gradient(to right, #9933FF 50%, #00FF00 50%)" },
-  { name:"RedBlueDark", del:"#B22222", ins:"#00008B", gradient:"linear-gradient(to right, #B22222 50%, #00008B 50%)" },
-  { name:"OrangeGreen", del:"#FF9900", ins:"#008000", gradient:"linear-gradient(to right, #FF9900 50%, #008000 50%)" }
-];
-let styleModeIndex = 0;
-
-let highlightModes = [
-  { name:"Off", color:null },
-  { name:"Yellow", color:"#ffff00" },
-  { name:"Green", color:"#00ff00" },
-  { name:"Cyan", color:"#00ffff" }
-];
-let highlightIndex = 0;
-
-let baseFontSize = 14;
-const minFontSize = 10;
-const maxFontSize = 20;
-
-let diffElements = [];
-let currentIndex = -1;
-let logoFlipped = false;
-
-let lastOriginalText = "";
-let lastModifiedText = "";
-
-// Functions follow...
-
-function updateLogoColours() {
-  const mode = styleModes[styleModeIndex];
-  if (logoFlipped) {
-    logoRed.style.color = mode.ins;
-    logoRed.style.textDecoration = "underline";
-    logoBen.style.color = mode.del;
-    logoBen.style.textDecoration = "line-through";
-  } else {
-    logoRed.style.color = mode.del;
-    logoRed.style.textDecoration = "line-through";
-    logoBen.style.color = mode.ins;
-    logoBen.style.textDecoration = "underline";
-  }
-}
 
 function updateColourButton(){
   colourButton.style.setProperty("--gradient", styleModes[styleModeIndex].gradient);
 }
 function updateHighlightButton(){
-  if (highlightIndex === 0) {
-    highlightButton.style.background = "#eee";
-    highlightButton.classList.add("highlight-off");
-  } else {
-    highlightButton.style.background = highlightModes[highlightIndex].color;
-    highlightButton.classList.remove("highlight-off");
-  }
+  highlightButton.style.background = highlightIndex === 0 ? "#eee" : highlightModes[highlightIndex].color;
 }
 function escapeHTML(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 function updateTextAreasFont() {
-  originalBox.style.fontSize = `${baseFontSize}px`;
-  modifiedBox.style.fontSize = `${baseFontSize}px`;
-  outputBox.style.fontSize = `${baseFontSize}px`;
+  [originalBox, modifiedBox, outputBox].forEach(e => e.style.fontSize = `${baseFontSize}px`);
   fontSizeDisplay.textContent = baseFontSize;
 }
 function generateDiff() {
@@ -344,140 +282,73 @@ function generateDiff() {
   const diffs = dmp.diff_main(original, modified);
   dmp.diff_cleanupEfficiency(diffs);
 
+  const mode = styleModes[styleModeIndex];
   let result = '';
   let idCounter = 0;
   let insertions = 0;
   let deletions = 0;
-  const mode = styleModes[styleModeIndex];
 
   for (const [op, data] of diffs) {
     const safe = escapeHTML(data);
-    let baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
+    const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
     let emphasis = '';
-    if (highlightIndex !== 0 && op !== 0) {
-      emphasis = `background-color:${highlightModes[highlightIndex].color};`;
-    }
-
+    if (highlightIndex !== 0 && op !== 0) emphasis = `background-color:${highlightModes[highlightIndex].color};`;
     if (op === 0) {
-      result += `<span class="black" style="${baseStyle}">${safe}</span>`;
+      result += `<span style="${baseStyle}">${safe}</span>`;
     } else if (op === -1) {
-      const id = `diff-${idCounter++}`;
-      result += `<span id="${id}" style="${baseStyle}color:${mode.del};text-decoration:line-through;${emphasis}">${safe}</span>`;
-      diffElements.push(id);
+      result += `<span id="diff-${idCounter++}" style="${baseStyle}color:${mode.del};text-decoration:line-through;${emphasis}">${safe}</span>`;
       deletions++;
     } else if (op === 1) {
-      const id = `diff-${idCounter++}`;
-      result += `<span id="${id}" style="${baseStyle}color:${mode.ins};text-decoration:underline;${emphasis}">${safe}</span>`;
-      diffElements.push(id);
+      result += `<span id="diff-${idCounter++}" style="${baseStyle}color:${mode.ins};text-decoration:underline;${emphasis}">${safe}</span>`;
       insertions++;
     }
   }
 
   outputBox.innerHTML = result;
   updateTextAreasFont();
-
-  if (diffElements.length) {
+  if (insertions + deletions > 0) {
     prevButton.classList.remove("disabled-button");
     nextButton.classList.remove("disabled-button");
   }
-
   summaryBox.style.display = "block";
-  summaryBox.textContent = `Summary: ${insertions} insertion${insertions !== 1 ? "s" : ""}, ${deletions} deletion${deletions !== 1 ? "s" : ""}.`;
+  summaryBox.textContent = `Summary: ${insertions} insertion${insertions!==1?"s":""}, ${deletions} deletion${deletions!==1?"s":""}.`;
 }
 
-// Event listeners
+// Event Listeners
 originalBox.addEventListener("input", generateDiff);
 modifiedBox.addEventListener("input", generateDiff);
-
-originalBox.addEventListener("paste", () => {
-  originalBox.classList.add("flash");
-  setTimeout(() => originalBox.classList.remove("flash"), 300);
-});
-modifiedBox.addEventListener("paste", () => {
-  modifiedBox.classList.add("flash");
-  setTimeout(() => modifiedBox.classList.remove("flash"), 300);
-});
-
 colourButton.addEventListener("click", () => {
-  styleModeIndex = (styleModeIndex + 1) % styleModes.length;
+  styleModeIndex = (styleModeIndex+1)%styleModes.length;
   updateColourButton();
-  updateLogoColours();
   generateDiff();
 });
-
 highlightButton.addEventListener("click", () => {
-  highlightIndex = (highlightIndex + 1) % highlightModes.length;
+  highlightIndex = (highlightIndex+1)%highlightModes.length;
   updateHighlightButton();
   generateDiff();
 });
-
 updateColourButton();
-updateLogoColours();
 updateHighlightButton();
-
-fontDownButton.addEventListener("click", () => {
-  if (baseFontSize > minFontSize) { baseFontSize--; }
-  updateTextAreasFont();
-  generateDiff();
-});
-
-fontUpButton.addEventListener("click", () => {
-  if (baseFontSize < maxFontSize) { baseFontSize++; }
-  updateTextAreasFont();
-  generateDiff();
-});
-
+fontDownButton.addEventListener("click", () => {if(baseFontSize>minFontSize){baseFontSize--;updateTextAreasFont();}});
+fontUpButton.addEventListener("click", () => {if(baseFontSize<maxFontSize){baseFontSize++;updateTextAreasFont();}});
 flipButton.addEventListener("click", () => {
-  const temp = originalBox.value;
-  originalBox.value = modifiedBox.value;
-  modifiedBox.value = temp;
+  [originalBox.value, modifiedBox.value]=[modifiedBox.value, originalBox.value];
   generateDiff();
-  logoFlipped = !logoFlipped;
-  updateLogoColours();
 });
-
-clearButton.addEventListener("click", () => {
-  if (clearButton.textContent === "Clear All") {
-    lastOriginalText = originalBox.value;
-    lastModifiedText = modifiedBox.value;
-    originalBox.value = "";
-    modifiedBox.value = "";
-    outputBox.innerHTML = "";
-    summaryBox.style.display = "none";
-    diffElements = [];
-    currentIndex = -1;
-    prevButton.classList.add("disabled-button");
-    nextButton.classList.add("disabled-button");
-    clearButton.textContent = "Restore";
-clearButton.style.background = "#fff8c4"; // pastel yellow background
-clearButton.style.borderColor = "#f4c27b"; // matching border
-  } else {
-    originalBox.value = lastOriginalText;
-    modifiedBox.value = lastModifiedText;
-    generateDiff();
-    clearButton.textContent = "Clear All";
-clearButton.style.background = "#eee"; // reset to default
-clearButton.style.borderColor = "#ccc"; // reset to default
-  }
-});
-
 copyButton.addEventListener("click", () => {
   copyDropdown.style.display = copyDropdown.style.display === "flex" ? "none" : "flex";
 });
-
 document.addEventListener("click", (event) => {
   if (!copyButton.contains(event.target) && !copyDropdown.contains(event.target)) {
     copyDropdown.style.display = "none";
   }
 });
-
 copyModifiedBenline.addEventListener("click", async () => {
   const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
-  const modifiedHTML = `<div style="${baseStyle}">${modifiedBox.value.replace(/\n/g, '<br>')}</div>`;
-  const separatorHTML = `<div style="${baseStyle}">***</div>`;
-  const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
+  const modifiedHTML = `<pre style="${baseStyle}">${escapeHTML(modifiedBox.value)}</pre>`;
+  const separatorHTML = `<pre style="${baseStyle}">***</pre>`;
+  const benlineHTML = `<pre style="${baseStyle}">${outputBox.innerHTML}</pre>`;
   const combinedHTML = modifiedHTML + separatorHTML + benlineHTML;
-
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -496,10 +367,9 @@ copyModifiedBenline.addEventListener("click", async () => {
   }
   copyDropdown.style.display = "none";
 });
-
 copyBenlineOnly.addEventListener("click", async () => {
   const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
-  const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
+  const benlineHTML = `<pre style="${baseStyle}">${outputBox.innerHTML}</pre>`;
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -513,28 +383,6 @@ copyBenlineOnly.addEventListener("click", async () => {
     alert("Copy failed: " + err);
   }
   copyDropdown.style.display = "none";
-});
-
-nextButton.addEventListener("click", () => {
-  if (!diffElements.length) return;
-  if (currentIndex >= 0) {
-    document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
-  }
-  currentIndex = (currentIndex + 1) % diffElements.length;
-  const el = document.getElementById(diffElements[currentIndex]);
-  el.classList.add("highlighted-diff");
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
-});
-
-prevButton.addEventListener("click", () => {
-  if (!diffElements.length) return;
-  if (currentIndex >= 0) {
-    document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
-  }
-  currentIndex = (currentIndex - 1 + diffElements.length) % diffElements.length;
-  const el = document.getElementById(diffElements[currentIndex]);
-  el.classList.add("highlighted-diff");
-  el.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 </script>
 </body>
