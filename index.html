@@ -228,6 +228,8 @@ const minFontSize = 10;
 const maxFontSize = 20;
 let diffElements = [];
 let currentIndex = -1;
+let lastOriginalText = "";
+let lastModifiedText = "";
 
 const originalBox = document.getElementById("original");
 const modifiedBox = document.getElementById("modified");
@@ -246,7 +248,6 @@ const copyModifiedBenline = document.getElementById("copy-modified-benline");
 const copyBenlineOnly = document.getElementById("copy-benline-only");
 const prevButton = document.getElementById("prev-button");
 const nextButton = document.getElementById("next-button");
-
 function updateColourButton(){
   colourButton.style.setProperty("--gradient", styleModes[styleModeIndex].gradient);
 }
@@ -257,7 +258,11 @@ function escapeHTML(str) {
   return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 function updateTextAreasFont() {
-  [originalBox, modifiedBox, outputBox].forEach(e => e.style.fontSize = `${baseFontSize}px`);
+  [originalBox, modifiedBox].forEach(e => e.style.fontSize = `${baseFontSize}px`);
+  outputBox.style.fontSize = `${baseFontSize}px`;
+  outputBox.querySelectorAll("span").forEach(span => {
+    span.style.fontSize = `${baseFontSize}px`;
+  });
   fontSizeDisplay.textContent = baseFontSize;
 }
 function generateDiff() {
@@ -283,7 +288,9 @@ function generateDiff() {
   dmp.diff_cleanupEfficiency(diffs);
 
   const mode = styleModes[styleModeIndex];
-  let result = '';
+  let resultLines = [];
+  let currentLine = '';
+
   let idCounter = 0;
   let insertions = 0;
   let deletions = 0;
@@ -293,20 +300,36 @@ function generateDiff() {
     const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;`;
     let emphasis = '';
     if (highlightIndex !== 0 && op !== 0) emphasis = `background-color:${highlightModes[highlightIndex].color};`;
-    if (op === 0) {
-      result += `<span style="${baseStyle}">${safe}</span>`;
-    } else if (op === -1) {
-      result += `<span id="diff-${idCounter++}" style="${baseStyle}color:${mode.del};text-decoration:line-through;${emphasis}">${safe}</span>`;
-      deletions++;
-    } else if (op === 1) {
-      result += `<span id="diff-${idCounter++}" style="${baseStyle}color:${mode.ins};text-decoration:underline;${emphasis}">${safe}</span>`;
-      insertions++;
+
+    const lines = safe.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      let span = '';
+      if (op === 0) {
+        span = `<span style="${baseStyle}">${lines[i]}</span>`;
+      } else if (op === -1) {
+        const spanId = "diff-" + idCounter++;
+        span = `<span id="${spanId}" style="${baseStyle}color:${mode.del};text-decoration:line-through;${emphasis}">${lines[i]}</span>`;
+        diffElements.push(spanId);
+        deletions++;
+      } else if (op === 1) {
+        const spanId = "diff-" + idCounter++;
+        span = `<span id="${spanId}" style="${baseStyle}color:${mode.ins};text-decoration:underline;${emphasis}">${lines[i]}</span>`;
+        diffElements.push(spanId);
+        insertions++;
+      }
+      currentLine += span;
+      if (i < lines.length - 1) {
+        resultLines.push(currentLine);
+        currentLine = '';
+      }
     }
   }
 
-  outputBox.innerHTML = result;
+  if (currentLine) resultLines.push(currentLine);
+
+  outputBox.innerHTML = resultLines.map(l => `<div>${l}</div>`).join('');
   updateTextAreasFont();
-  if (insertions + deletions > 0) {
+  if (diffElements.length > 0) {
     prevButton.classList.remove("disabled-button");
     nextButton.classList.remove("disabled-button");
   }
@@ -329,11 +352,45 @@ highlightButton.addEventListener("click", () => {
 });
 updateColourButton();
 updateHighlightButton();
-fontDownButton.addEventListener("click", () => {if(baseFontSize>minFontSize){baseFontSize--;updateTextAreasFont();}});
-fontUpButton.addEventListener("click", () => {if(baseFontSize<maxFontSize){baseFontSize++;updateTextAreasFont();}});
+fontDownButton.addEventListener("click", () => {
+  if(baseFontSize > minFontSize){
+    baseFontSize--;
+    updateTextAreasFont();
+  }
+});
+fontUpButton.addEventListener("click", () => {
+  if(baseFontSize < maxFontSize){
+    baseFontSize++;
+    updateTextAreasFont();
+  }
+});
 flipButton.addEventListener("click", () => {
-  [originalBox.value, modifiedBox.value]=[modifiedBox.value, originalBox.value];
+  [originalBox.value, modifiedBox.value] = [modifiedBox.value, originalBox.value];
   generateDiff();
+});
+clearButton.addEventListener("click", () => {
+  if (clearButton.textContent === "Clear All") {
+    lastOriginalText = originalBox.value;
+    lastModifiedText = modifiedBox.value;
+    originalBox.value = "";
+    modifiedBox.value = "";
+    outputBox.innerHTML = "";
+    summaryBox.style.display = "none";
+    diffElements = [];
+    currentIndex = -1;
+    prevButton.classList.add("disabled-button");
+    nextButton.classList.add("disabled-button");
+    clearButton.textContent = "Restore";
+    clearButton.style.background = "#fff8c4";
+    clearButton.style.borderColor = "#f4c27b";
+  } else {
+    originalBox.value = lastOriginalText;
+    modifiedBox.value = lastModifiedText;
+    generateDiff();
+    clearButton.textContent = "Clear All";
+    clearButton.style.background = "#eee";
+    clearButton.style.borderColor = "#ccc";
+  }
 });
 copyButton.addEventListener("click", () => {
   copyDropdown.style.display = copyDropdown.style.display === "flex" ? "none" : "flex";
@@ -344,10 +401,10 @@ document.addEventListener("click", (event) => {
   }
 });
 copyModifiedBenline.addEventListener("click", async () => {
-  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
-  const modifiedHTML = `<pre style="${baseStyle}">${escapeHTML(modifiedBox.value)}</pre>`;
-  const separatorHTML = `<pre style="${baseStyle}">***</pre>`;
-  const benlineHTML = `<pre style="${baseStyle}">${outputBox.innerHTML}</pre>`;
+  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;`;
+  const modifiedHTML = `<div style="${baseStyle}white-space:pre-wrap;">${escapeHTML(modifiedBox.value).replace(/\n/g, "<br>")}</div>`;
+  const separatorHTML = `<div style="${baseStyle}">***</div>`;
+  const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
   const combinedHTML = modifiedHTML + separatorHTML + benlineHTML;
   try {
     await navigator.clipboard.write([
@@ -368,8 +425,8 @@ copyModifiedBenline.addEventListener("click", async () => {
   copyDropdown.style.display = "none";
 });
 copyBenlineOnly.addEventListener("click", async () => {
-  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;white-space:pre-wrap;`;
-  const benlineHTML = `<pre style="${baseStyle}">${outputBox.innerHTML}</pre>`;
+  const baseStyle = `font-family:Inter,Calibri,sans-serif;font-size:${baseFontSize}px;background:none;`;
+  const benlineHTML = `<div style="${baseStyle}">${outputBox.innerHTML}</div>`;
   try {
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -383,6 +440,26 @@ copyBenlineOnly.addEventListener("click", async () => {
     alert("Copy failed: " + err);
   }
   copyDropdown.style.display = "none";
+});
+prevButton.addEventListener("click", () => {
+  if (!diffElements.length) return;
+  if (currentIndex >= 0) {
+    document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
+  }
+  currentIndex = (currentIndex - 1 + diffElements.length) % diffElements.length;
+  const el = document.getElementById(diffElements[currentIndex]);
+  el.classList.add("highlighted-diff");
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+nextButton.addEventListener("click", () => {
+  if (!diffElements.length) return;
+  if (currentIndex >= 0) {
+    document.getElementById(diffElements[currentIndex]).classList.remove("highlighted-diff");
+  }
+  currentIndex = (currentIndex + 1) % diffElements.length;
+  const el = document.getElementById(diffElements[currentIndex]);
+  el.classList.add("highlighted-diff");
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 </script>
 </body>
