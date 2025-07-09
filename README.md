@@ -6,3 +6,7 @@ This project uses the following open source components:
 - [Inter font](https://rsms.me/inter/) – SIL Open Font License (OFL)
 
 See LICENSES/ for full license texts.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
